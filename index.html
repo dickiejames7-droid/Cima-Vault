@@ -77,7 +77,6 @@
     .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 8px; background: none; border: none; cursor: pointer; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.15s; }
     .tab.active { color: var(--navy); }
     .tab svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    /* PAGE 1 */
     #pageAdd { background: var(--bg); }
     .add-page-inner { flex: 1; display: flex; flex-direction: column; padding: calc(var(--safe-top) + 24px) 28px 28px; overflow: hidden; }
     .add-page-header { margin-bottom: 28px; flex-shrink: 0; }
@@ -103,7 +102,6 @@
     .add-empty { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: var(--text-dim); }
     .add-empty-icon { font-size: 36px; opacity: 0.3; }
     .add-empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; line-height: 2; }
-    /* PAGE 2 */
     #pageList { background: var(--bg); }
     .list-header { display: flex; align-items: center; justify-content: space-between; padding: calc(var(--safe-top) + 16px) 20px 14px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
     .list-title { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--navy); }
@@ -129,7 +127,7 @@
     .meta-empty { padding: 48px 24px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; line-height: 2.2; color: var(--text-dim); }
     .meta-item.dragging { opacity: 0.3; }
     .meta-item.drag-over-meta { box-shadow: 0 -2px 0 var(--navy) inset; background: var(--blue-faint); }
-    /* Category colours */
+    .drag-ghost { position: fixed; pointer-events: none; z-index: 999; opacity: 0.93; box-shadow: 0 8px 28px rgba(0,0,0,0.2); background: var(--bg); border: 1px solid var(--navy); }
     .cc-Financial   { color: #1a6b3c; } .cb-Financial   { background: #1a6b3c; }
     .cc-Costing     { color: #1e3a5f; } .cb-Costing     { background: #1e3a5f; }
     .cc-Performance { color: #7a4010; } .cb-Performance { background: #c47030; }
@@ -137,7 +135,6 @@
     .cc-Tax         { color: #8b1a1a; } .cb-Tax         { background: #c03030; }
     .cc-Reporting   { color: #1a5a6b; } .cb-Reporting   { background: #2a8aaa; }
     .cc-Other       { color: #5a5a3a; } .cb-Other       { background: #8a8a50; }
-    /* MODAL */
     .modal-backdrop { position: fixed; inset: 0; background: rgba(30,30,20,0.5); z-index: 200; display: flex; align-items: flex-end; backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.25s; }
     .modal-backdrop.visible { opacity: 1; pointer-events: all; }
     .modal { background: var(--bg); border-top: 2px solid var(--navy); width: 100%; max-height: 92dvh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); padding-bottom: var(--safe-bot); }
@@ -165,7 +162,6 @@
     .btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
     .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
     .btn-danger:hover { background: var(--danger); color: white; }
-    /* DETAIL */
     .detail-backdrop { position: fixed; inset: 0; background: rgba(20,20,15,0.6); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(5px); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
     .detail-backdrop.visible { opacity: 1; pointer-events: all; }
     .detail-card { background: var(--bg); border: 1px solid var(--border2); border-top: 3px solid var(--navy); width: 100%; max-width: 560px; max-height: 85dvh; overflow-y: auto; transform: translateY(12px) scale(0.97); transition: transform 0.22s cubic-bezier(0.4,0,0.2,1); }
@@ -185,7 +181,6 @@
 <body>
 <div class="app">
   <div class="pages">
-    <!-- PAGE 1: ADD -->
     <div class="page active" id="pageAdd">
       <div class="add-page-inner">
         <div class="add-page-header">
@@ -203,7 +198,6 @@
         <div class="recent-list" id="recentList"></div>
       </div>
     </div>
-    <!-- PAGE 2: REFERENCE LIST -->
     <div class="page hidden-right" id="pageList">
       <div class="list-header">
         <span class="list-title">Quick Reference</span>
@@ -293,7 +287,90 @@
 <script>
 const STORAGE_KEY = 'cima_vault_v2';
 const CATS = ['Financial','Costing','Performance','Investment','Tax','Reporting','Other'];
-let entries = [], metaOrder = {}, editingId = null, detailId = null, metaDragSrcId = null, currentPage = 'add';
+let entries = [], metaOrder = {}, editingId = null, detailId = null, currentPage = 'add';
+
+// ── TOUCH DRAG STATE ──────────────────────────────────
+let tDrag = null;
+
+function initTouchDrag(item, entryId, cat, groupsRef) {
+  let longPressTimer = null;
+  let didDrag = false;
+
+  item.addEventListener('touchstart', ev => {
+    didDrag = false;
+    longPressTimer = setTimeout(() => {
+      didDrag = true;
+      startTouchDrag(ev.touches[0], item, entryId, cat, groupsRef);
+    }, 380);
+  }, { passive: true });
+
+  item.addEventListener('touchmove', ev => {
+    if (!tDrag) { clearTimeout(longPressTimer); return; }
+    ev.preventDefault();
+    moveTouchDrag(ev.touches[0]);
+  }, { passive: false });
+
+  item.addEventListener('touchend', () => {
+    clearTimeout(longPressTimer);
+    if (tDrag) { endTouchDrag(); }
+    else if (!didDrag) { openDetail(entryId); }
+  });
+
+  item.addEventListener('touchcancel', () => {
+    clearTimeout(longPressTimer);
+    if (tDrag) endTouchDrag(true);
+  });
+}
+
+function startTouchDrag(touch, srcEl, id, cat, groupsRef) {
+  const rect = srcEl.getBoundingClientRect();
+  const ghost = srcEl.cloneNode(true);
+  ghost.className = 'drag-ghost';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+  document.body.appendChild(ghost);
+  srcEl.classList.add('dragging');
+  const scrollEl = document.getElementById('metaList');
+  tDrag = { id, cat, ghost, srcEl, scrollEl, groupsRef };
+  navigator.vibrate && navigator.vibrate(30);
+}
+
+function moveTouchDrag(touch) {
+  if (!tDrag) return;
+  const { ghost, srcEl, scrollEl } = tDrag;
+  const rect = srcEl.getBoundingClientRect();
+  ghost.style.transform = `translate(${rect.left}px, ${touch.clientY - rect.height / 2}px)`;
+  const listRect = scrollEl.getBoundingClientRect();
+  const edge = 60;
+  if (touch.clientY < listRect.top + edge) scrollEl.scrollTop -= 6;
+  else if (touch.clientY > listRect.bottom - edge) scrollEl.scrollTop += 6;
+  document.querySelectorAll('.meta-item').forEach(el => el.classList.remove('drag-over-meta'));
+  const els = document.elementsFromPoint(touch.clientX, touch.clientY);
+  const target = els.find(el => el.classList.contains('meta-item') && el !== tDrag.srcEl);
+  if (target) target.classList.add('drag-over-meta');
+}
+
+function endTouchDrag(cancel = false) {
+  if (!tDrag) return;
+  const { id, cat, ghost, srcEl, groupsRef } = tDrag;
+  ghost.remove();
+  srcEl.classList.remove('dragging');
+  if (!cancel) {
+    const target = document.querySelector('.meta-item.drag-over-meta');
+    if (target && target.dataset.id !== id) {
+      const targetId = target.dataset.id;
+      const grp = groupsRef[cat];
+      if (grp) {
+        if (!metaOrder[cat]) metaOrder[cat] = grp.map(x => x.id);
+        const arr = metaOrder[cat];
+        const fi = arr.indexOf(id), ti = arr.indexOf(targetId);
+        if (fi > -1 && ti > -1) { arr.splice(fi, 1); arr.splice(ti, 0, id); save(); renderAll(); }
+      }
+    }
+  }
+  document.querySelectorAll('.meta-item').forEach(el => el.classList.remove('drag-over-meta'));
+  tDrag = null;
+}
 
 function load() {
   try { const r = localStorage.getItem(STORAGE_KEY); if(r){const p=JSON.parse(r);entries=p.entries||[];metaOrder=p.metaOrder||{};} } catch(e){}
@@ -354,21 +431,10 @@ function renderMeta() {
     group.appendChild(hdr);
     groups[cat].forEach(e=>{
       const item=document.createElement('div');
-      item.className='meta-item'; item.draggable=true; item.dataset.id=e.id;
+      item.className='meta-item'; item.dataset.id=e.id; item.dataset.cat=cat;
       item.innerHTML=`<div class="meta-stripe cb-${cc}"></div><div class="meta-inner"><span class="meta-ttl">${esc(e.title)}</span><span class="meta-sep">&middot;</span><span class="meta-fml">${esc(e.formula)}</span><span class="meta-arr">&#8250;</span></div>`;
-      item.addEventListener('click',()=>openDetail(e.id));
-      item.addEventListener('dragstart',ev=>{metaDragSrcId=e.id;item.classList.add('dragging');ev.dataTransfer.effectAllowed='move';ev.stopPropagation();});
-      item.addEventListener('dragend',()=>{metaDragSrcId=null;document.querySelectorAll('.meta-item').forEach(m=>m.classList.remove('dragging','drag-over-meta'));});
-      item.addEventListener('dragover',ev=>{ev.preventDefault();ev.stopPropagation();item.classList.add('drag-over-meta');});
-      item.addEventListener('dragleave',()=>item.classList.remove('drag-over-meta'));
-      item.addEventListener('drop',ev=>{
-        ev.preventDefault();ev.stopPropagation();item.classList.remove('drag-over-meta');
-        if(metaDragSrcId&&metaDragSrcId!==e.id){
-          if(!metaOrder[cat])metaOrder[cat]=groups[cat].map(x=>x.id);
-          const arr=metaOrder[cat],fi=arr.indexOf(metaDragSrcId),ti=arr.indexOf(e.id);
-          if(fi>-1&&ti>-1){arr.splice(fi,1);arr.splice(ti,0,metaDragSrcId);save();renderAll();}
-        }
-      });
+      initTouchDrag(item, e.id, cat, groups);
+      item.addEventListener('click', () => { if (!tDrag) openDetail(e.id); });
       wrap.appendChild(item);
     });
     group.appendChild(wrap); el.appendChild(group);
