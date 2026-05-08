@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>CIMA Vault</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CIMA Vault">
+  <meta name="theme-color" content="#f5f0e8">
+  <link id="apple-touch-icon" rel="apple-touch-icon" sizes="180x180">
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#f5f0e8';
+      ctx.roundRect(0, 0, 512, 512, 80);
+      ctx.fill();
+      const grad = ctx.createLinearGradient(0, 0, 512, 512);
+      grad.addColorStop(0, '#1e3a5f');
+      grad.addColorStop(1, '#2e6da4');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 390, 512, 122);
+      ctx.fillStyle = '#1e3a5f';
+      ctx.font = 'bold 210px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('CV', 256, 215);
+      ctx.fillStyle = '#f5f0e8';
+      ctx.font = 'bold 48px monospace';
+      ctx.fillText('CIMA VAULT', 256, 458);
+      const dataURL = canvas.toDataURL('image/png');
+      document.getElementById('apple-touch-icon').href = dataURL;
+      const manifest = {
+        name: 'CIMA Vault', short_name: 'CIMA Vault',
+        display: 'standalone', background_color: '#f5f0e8', theme_color: '#f5f0e8',
+        icons: [{ src: dataURL, sizes: '512x512', type: 'image/png' }]
+      };
+      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      const link = document.createElement('link');
+      link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
+      document.head.appendChild(link);
+    });
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #f5f0e8;
+      --surface:   #eee9df;
+      --surface2:  #e6e0d4;
+      --surface3:  #ddd6c8;
+      --border:    #d0c9ba;
+      --border2:   #b8b0a0;
+      --navy:      #1e3a5f;
+      --blue:      #2e6da4;
+      --blue-mid:  #4a8fc0;
+      --blue-lt:   #d0e4f4;
+      --blue-faint:#e8f2fb;
+      --text:      #1a1a1a;
+      --text-mid:  #5a5a5a;
+      --text-dim:  #9a9080;
+      --danger:    #b03030;
+      --safe-top:  env(safe-area-inset-top, 0px);
+      --safe-bot:  env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; height: 100dvh; background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; overflow: hidden; }
+    .app { display: flex; flex-direction: column; height: 100dvh; }
+    .pages { flex: 1; overflow: hidden; position: relative; }
+    .page { position: absolute; inset: 0; display: flex; flex-direction: column; transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s; }
+    .page.hidden-left  { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+    .page.hidden-right { transform: translateX(100%);  opacity: 0; pointer-events: none; }
+    .page.active       { transform: translateX(0);     opacity: 1; }
+    .tab-bar { display: flex; border-top: 1px solid var(--border); background: var(--bg); padding-bottom: var(--safe-bot); flex-shrink: 0; }
+    .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 8px; background: none; border: none; cursor: pointer; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.15s; }
+    .tab.active { color: var(--navy); }
+    .tab svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    /* PAGE 1 */
+    #pageAdd { background: var(--bg); }
+    .add-page-inner { flex: 1; display: flex; flex-direction: column; padding: calc(var(--safe-top) + 24px) 28px 28px; overflow: hidden; }
+    .add-page-header { margin-bottom: 28px; flex-shrink: 0; }
+    .add-page-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .logo-mark { width: 32px; height: 32px; background: var(--navy); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: var(--bg); flex-shrink: 0; }
+    .logo-text { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; letter-spacing: 0.18em; color: var(--navy); text-transform: uppercase; }
+    .add-page-sub { font-size: 12px; color: var(--text-dim); letter-spacing: 0.04em; }
+    .big-add-btn { width: 100%; background: var(--navy); color: var(--bg); border: none; padding: 28px 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; transition: background 0.15s, transform 0.1s; margin-bottom: 24px; flex-shrink: 0; }
+    .big-add-btn:hover { background: var(--blue); }
+    .big-add-btn:active { transform: scale(0.98); }
+    .big-add-plus { width: 36px; height: 36px; border: 2px solid var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 300; flex-shrink: 0; }
+    .recent-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; flex-shrink: 0; }
+    .recent-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .recent-list::-webkit-scrollbar { width: 3px; }
+    .recent-list::-webkit-scrollbar-thumb { background: var(--border); }
+    .recent-item { background: var(--surface); border: 1px solid var(--border); padding: 11px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+    .recent-item:hover { background: var(--surface2); border-color: var(--border2); }
+    .ri-dot { width: 7px; height: 7px; flex-shrink: 0; }
+    .ri-body { flex: 1; min-width: 0; }
+    .ri-title { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ri-cat { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px; }
+    .ri-arrow { color: var(--text-dim); font-size: 14px; flex-shrink: 0; }
+    .add-empty { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: var(--text-dim); }
+    .add-empty-icon { font-size: 36px; opacity: 0.3; }
+    .add-empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; line-height: 2; }
+    /* PAGE 2 */
+    #pageList { background: var(--bg); }
+    .list-header { display: flex; align-items: center; justify-content: space-between; padding: calc(var(--safe-top) + 16px) 20px 14px; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+    .list-title { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--navy); }
+    .count-pill { font-family: 'IBM Plex Mono', monospace; font-size: 10px; background: var(--blue-lt); color: var(--navy); padding: 3px 10px; border: 1px solid var(--border); }
+    .meta-list { flex: 1; overflow-y: auto; }
+    .meta-list::-webkit-scrollbar { width: 3px; }
+    .meta-list::-webkit-scrollbar-thumb { background: var(--border); }
+    .meta-group { border-bottom: 1px solid var(--border); }
+    .meta-group-hdr { display: flex; align-items: center; gap: 8px; padding: 10px 18px; background: var(--surface); border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); transition: background 0.12s; }
+    .meta-group-hdr:hover { background: var(--surface2); }
+    .meta-group-ct { margin-left: auto; font-size: 9px; color: var(--text-dim); }
+    .meta-chevron { font-size: 10px; color: var(--border2); transition: transform 0.2s; margin-left: 4px; }
+    .meta-group-hdr.collapsed .meta-chevron { transform: rotate(-90deg); }
+    .meta-item { display: flex; align-items: center; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; overflow: hidden; }
+    .meta-item:last-child { border-bottom: none; }
+    .meta-item:hover { background: var(--blue-faint); }
+    .meta-stripe { width: 3px; align-self: stretch; flex-shrink: 0; }
+    .meta-inner { flex: 1; display: flex; align-items: center; gap: 10px; padding: 11px 14px; min-width: 0; }
+    .meta-ttl { font-size: 12px; font-weight: 500; color: var(--text); flex: 0 0 auto; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta-sep { color: var(--border2); font-size: 11px; flex-shrink: 0; }
+    .meta-fml { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--blue); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta-arr { color: var(--border2); font-size: 14px; flex-shrink: 0; padding-right: 4px; }
+    .meta-empty { padding: 48px 24px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; line-height: 2.2; color: var(--text-dim); }
+    .meta-item.dragging { opacity: 0.3; }
+    .meta-item.drag-over-meta { box-shadow: 0 -2px 0 var(--navy) inset; background: var(--blue-faint); }
+    /* Category colours */
+    .cc-Financial   { color: #1a6b3c; } .cb-Financial   { background: #1a6b3c; }
+    .cc-Costing     { color: #1e3a5f; } .cb-Costing     { background: #1e3a5f; }
+    .cc-Performance { color: #7a4010; } .cb-Performance { background: #c47030; }
+    .cc-Investment  { color: #4a1870; } .cb-Investment  { background: #7a40b0; }
+    .cc-Tax         { color: #8b1a1a; } .cb-Tax         { background: #c03030; }
+    .cc-Reporting   { color: #1a5a6b; } .cb-Reporting   { background: #2a8aaa; }
+    .cc-Other       { color: #5a5a3a; } .cb-Other       { background: #8a8a50; }
+    /* MODAL */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(30,30,20,0.5); z-index: 200; display: flex; align-items: flex-end; backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .modal-backdrop.visible { opacity: 1; pointer-events: all; }
+    .modal { background: var(--bg); border-top: 2px solid var(--navy); width: 100%; max-height: 92dvh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); padding-bottom: var(--safe-bot); }
+    .modal-backdrop.visible .modal { transform: translateY(0); }
+    .modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 0; }
+    .modal-hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 12px; border-bottom: 1px solid var(--border); }
+    .modal-ttl { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--navy); }
+    .modal-x { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--border); color: var(--text-mid); cursor: pointer; font-size: 14px; transition: all 0.15s; }
+    .modal-x:hover { border-color: var(--danger); color: var(--danger); }
+    .modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); }
+    .field input, .field textarea { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; padding: 10px 12px; outline: none; width: 100%; resize: none; transition: border-color 0.15s; border-radius: 0; -webkit-appearance: none; }
+    .field input:focus, .field textarea:focus { border-color: var(--blue); }
+    .field textarea { min-height: 90px; font-weight: 300; line-height: 1.55; }
+    .fml-field input { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--navy); }
+    .cat-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .cat-preset { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 11px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; transition: all 0.12s; }
+    .cat-preset:hover, .cat-preset.selected { background: var(--blue-lt); border-color: var(--blue); color: var(--navy); }
+    .modal-ftr { padding: 14px 20px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+    .btn { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; border: none; padding: 10px 18px; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: var(--navy); color: var(--bg); }
+    .btn-primary:hover { background: var(--blue); }
+    .btn-ghost { background: transparent; color: var(--text-mid); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    /* DETAIL */
+    .detail-backdrop { position: fixed; inset: 0; background: rgba(20,20,15,0.6); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(5px); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .detail-backdrop.visible { opacity: 1; pointer-events: all; }
+    .detail-card { background: var(--bg); border: 1px solid var(--border2); border-top: 3px solid var(--navy); width: 100%; max-width: 560px; max-height: 85dvh; overflow-y: auto; transform: translateY(12px) scale(0.97); transition: transform 0.22s cubic-bezier(0.4,0,0.2,1); }
+    .detail-backdrop.visible .detail-card { transform: translateY(0) scale(1); }
+    .detail-hdr { padding: 20px 22px 14px; border-bottom: 1px solid var(--border); }
+    .detail-cat { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+    .d-dot { width: 7px; height: 7px; }
+    .detail-title { font-size: 20px; font-weight: 500; color: var(--text); line-height: 1.3; }
+    .detail-body { padding: 18px 22px; }
+    .d-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+    .detail-fml { font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: var(--navy); background: var(--blue-faint); padding: 14px 16px; border-left: 3px solid var(--blue); margin-bottom: 18px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .detail-exp { font-size: 14px; font-weight: 300; color: var(--text-mid); line-height: 1.75; }
+    .detail-ftr { padding: 14px 22px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+    ::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-thumb { background: var(--border); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="pages">
+    <!-- PAGE 1: ADD -->
+    <div class="page active" id="pageAdd">
+      <div class="add-page-inner">
+        <div class="add-page-header">
+          <div class="add-page-logo">
+            <div class="logo-mark">CV</div>
+            <div class="logo-text">CIMA Vault</div>
+          </div>
+          <div class="add-page-sub">Formula &amp; concept reference</div>
+        </div>
+        <button class="big-add-btn" onclick="openAddModal()">
+          <div class="big-add-plus">+</div>
+          Add Formula or Concept
+        </button>
+        <div class="recent-label" id="recentLabel">Recent entries</div>
+        <div class="recent-list" id="recentList"></div>
+      </div>
+    </div>
+    <!-- PAGE 2: REFERENCE LIST -->
+    <div class="page hidden-right" id="pageList">
+      <div class="list-header">
+        <span class="list-title">Quick Reference</span>
+        <span class="count-pill" id="metaCount">0</span>
+      </div>
+      <div class="meta-list" id="metaList"></div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" id="tabAdd" onclick="goTo('add')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Add
+    </button>
+    <button class="tab" id="tabList" onclick="goTo('list')">
+      <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="0.5" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="0.5" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="0.5" fill="currentColor" stroke="none"/></svg>
+      Reference
+    </button>
+  </div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-backdrop" id="addModal" onclick="backdropClick(event,'addModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <span class="modal-ttl" id="modalTitle">New Entry</span>
+      <div class="modal-x" onclick="closeModal('addModal')">&#10005;</div>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Category</label>
+        <input type="text" id="fieldCategory" placeholder="e.g. Financial, Costing…" oninput="highlightPreset(this.value)" autocomplete="off">
+        <div class="cat-presets">
+          <div class="cat-preset" onclick="setCategory('Financial')">Financial</div>
+          <div class="cat-preset" onclick="setCategory('Costing')">Costing</div>
+          <div class="cat-preset" onclick="setCategory('Performance')">Performance</div>
+          <div class="cat-preset" onclick="setCategory('Investment')">Investment</div>
+          <div class="cat-preset" onclick="setCategory('Tax')">Tax</div>
+          <div class="cat-preset" onclick="setCategory('Reporting')">Reporting</div>
+          <div class="cat-preset" onclick="setCategory('Other')">Other</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Title</label>
+        <input type="text" id="fieldTitle" placeholder="e.g. Weighted Average Cost of Capital" autocomplete="off">
+      </div>
+      <div class="field fml-field">
+        <label>Formula / Concept</label>
+        <input type="text" id="fieldFormula" placeholder="e.g. WACC = Ke(E/V) + Kd(1-t)(D/V)" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Explanation</label>
+        <textarea id="fieldExplanation" placeholder="What does this mean? When do you use it? Key variables…"></textarea>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-danger" id="deleteBtn" style="display:none;margin-right:auto" onclick="deleteCurrentEdit()">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL OVERLAY -->
+<div class="detail-backdrop" id="detailOverlay" onclick="backdropClick(event,'detailOverlay')">
+  <div class="detail-card">
+    <div class="detail-hdr">
+      <div class="detail-cat">
+        <div class="d-dot" id="detailDot"></div>
+        <span id="detailCatText"></span>
+      </div>
+      <div class="detail-title" id="detailTitle"></div>
+    </div>
+    <div class="detail-body">
+      <div class="d-label">Formula / Concept</div>
+      <div class="detail-fml" id="detailFormula"></div>
+      <div class="d-label">Explanation</div>
+      <div class="detail-exp" id="detailExplanation"></div>
+    </div>
+    <div class="detail-ftr">
+      <button class="btn btn-ghost" onclick="closeDetail()">Close</button>
+      <button class="btn btn-ghost" onclick="editFromDetail()">Edit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'cima_vault_v2';
+const CATS = ['Financial','Costing','Performance','Investment','Tax','Reporting','Other'];
+let entries = [], metaOrder = {}, editingId = null, detailId = null, metaDragSrcId = null, currentPage = 'add';
+
+function load() {
+  try { const r = localStorage.getItem(STORAGE_KEY); if(r){const p=JSON.parse(r);entries=p.entries||[];metaOrder=p.metaOrder||{};} } catch(e){}
+}
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify({entries, metaOrder})); }
+function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function catClass(c) { return CATS.includes(c)?c:'Other'; }
+
+function goTo(page) {
+  if (currentPage===page) return;
+  currentPage = page;
+  document.getElementById('pageAdd').className  = page==='add'  ? 'page active' : 'page hidden-left';
+  document.getElementById('pageList').className = page==='list' ? 'page active' : 'page hidden-right';
+  document.getElementById('tabAdd').classList.toggle('active',  page==='add');
+  document.getElementById('tabList').classList.toggle('active', page==='list');
+}
+
+function renderAll() { renderRecent(); renderMeta(); document.getElementById('metaCount').textContent=entries.length; }
+
+function renderRecent() {
+  const el=document.getElementById('recentList'), lbl=document.getElementById('recentLabel');
+  if (!entries.length) {
+    lbl.style.display='none';
+    el.innerHTML='<div class="add-empty"><div class="add-empty-icon">&#8721;</div><div class="add-empty-text">No entries yet.<br>Hit the button above<br>to add your first formula.</div></div>';
+    return;
+  }
+  lbl.style.display='block';
+  el.innerHTML='';
+  [...entries].reverse().slice(0,8).forEach(e => {
+    const cc=catClass(e.category), d=document.createElement('div');
+    d.className='recent-item';
+    d.innerHTML=`<div class="ri-dot cb-${cc}"></div><div class="ri-body"><div class="ri-title">${esc(e.title)}</div><div class="ri-cat cc-${cc}">${esc(e.category)}</div></div><div class="ri-arrow">&#8250;</div>`;
+    d.addEventListener('click',()=>openDetail(e.id));
+    el.appendChild(d);
+  });
+}
+
+function renderMeta() {
+  const el=document.getElementById('metaList');
+  if (!entries.length) { el.innerHTML='<div class="meta-empty">No formulas yet.<br>Go to Add to get started.</div>'; return; }
+  const groups={}, catOrder=[];
+  entries.forEach(e=>{const c=e.category||'Other';if(!groups[c]){groups[c]=[];catOrder.push(c);}groups[c].push(e);});
+  Object.keys(metaOrder).forEach(cat=>{
+    if(!groups[cat])return;
+    const ord=[];metaOrder[cat].forEach(id=>{const f=groups[cat].find(x=>x.id===id);if(f)ord.push(f);});
+    groups[cat].forEach(e=>{if(!ord.find(x=>x.id===e.id))ord.push(e);});groups[cat]=ord;
+  });
+  el.innerHTML='';
+  catOrder.forEach(cat=>{
+    const cc=catClass(cat), group=document.createElement('div');
+    group.className='meta-group';
+    const hdr=document.createElement('div');
+    hdr.className='meta-group-hdr';
+    hdr.innerHTML=`<div class="ri-dot cb-${cc}" style="width:7px;height:7px;flex-shrink:0"></div><span class="cc-${cc}">${esc(cat)}</span><span class="meta-group-ct">${groups[cat].length}</span><span class="meta-chevron">&#9662;</span>`;
+    const wrap=document.createElement('div');
+    hdr.addEventListener('click',()=>{hdr.classList.toggle('collapsed');wrap.style.display=hdr.classList.contains('collapsed')?'none':'block';});
+    group.appendChild(hdr);
+    groups[cat].forEach(e=>{
+      const item=document.createElement('div');
+      item.className='meta-item'; item.draggable=true; item.dataset.id=e.id;
+      item.innerHTML=`<div class="meta-stripe cb-${cc}"></div><div class="meta-inner"><span class="meta-ttl">${esc(e.title)}</span><span class="meta-sep">&middot;</span><span class="meta-fml">${esc(e.formula)}</span><span class="meta-arr">&#8250;</span></div>`;
+      item.addEventListener('click',()=>openDetail(e.id));
+      item.addEventListener('dragstart',ev=>{metaDragSrcId=e.id;item.classList.add('dragging');ev.dataTransfer.effectAllowed='move';ev.stopPropagation();});
+      item.addEventListener('dragend',()=>{metaDragSrcId=null;document.querySelectorAll('.meta-item').forEach(m=>m.classList.remove('dragging','drag-over-meta'));});
+      item.addEventListener('dragover',ev=>{ev.preventDefault();ev.stopPropagation();item.classList.add('drag-over-meta');});
+      item.addEventListener('dragleave',()=>item.classList.remove('drag-over-meta'));
+      item.addEventListener('drop',ev=>{
+        ev.preventDefault();ev.stopPropagation();item.classList.remove('drag-over-meta');
+        if(metaDragSrcId&&metaDragSrcId!==e.id){
+          if(!metaOrder[cat])metaOrder[cat]=groups[cat].map(x=>x.id);
+          const arr=metaOrder[cat],fi=arr.indexOf(metaDragSrcId),ti=arr.indexOf(e.id);
+          if(fi>-1&&ti>-1){arr.splice(fi,1);arr.splice(ti,0,metaDragSrcId);save();renderAll();}
+        }
+      });
+      wrap.appendChild(item);
+    });
+    group.appendChild(wrap); el.appendChild(group);
+  });
+}
+
+function openAddModal() {
+  editingId=null;
+  document.getElementById('modalTitle').textContent='New Entry';
+  document.getElementById('deleteBtn').style.display='none';
+  clearFields();
+  document.getElementById('addModal').classList.add('visible');
+  setTimeout(()=>document.getElementById('fieldCategory').focus(),200);
+}
+function openEditModal(id) {
+  const e=entries.find(x=>x.id===id); if(!e)return;
+  editingId=id;
+  document.getElementById('modalTitle').textContent='Edit Entry';
+  document.getElementById('deleteBtn').style.display='block';
+  document.getElementById('fieldCategory').value=e.category;
+  document.getElementById('fieldTitle').value=e.title;
+  document.getElementById('fieldFormula').value=e.formula;
+  document.getElementById('fieldExplanation').value=e.explanation;
+  highlightPreset(e.category);
+  document.getElementById('addModal').classList.add('visible');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
+function backdropClick(ev,id) { if(ev.target.id===id)closeModal(id); }
+function clearFields() {
+  ['fieldCategory','fieldTitle','fieldFormula','fieldExplanation'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('.cat-preset').forEach(p=>p.classList.remove('selected'));
+}
+function setCategory(cat) { document.getElementById('fieldCategory').value=cat; highlightPreset(cat); }
+function highlightPreset(val) { document.querySelectorAll('.cat-preset').forEach(p=>p.classList.toggle('selected',p.textContent===val)); }
+function saveEntry() {
+  const cat=document.getElementById('fieldCategory').value.trim();
+  const title=document.getElementById('fieldTitle').value.trim();
+  const formula=document.getElementById('fieldFormula').value.trim();
+  const explanation=document.getElementById('fieldExplanation').value.trim();
+  if(!cat||!title||!formula){alert('Category, title and formula are required.');return;}
+  if(editingId){const e=entries.find(x=>x.id===editingId);if(e){e.category=cat;e.title=title;e.formula=formula;e.explanation=explanation;}}
+  else{entries.push({id:genId(),category:cat,title,formula,explanation});}
+  save();renderAll();closeModal('addModal');
+}
+function deleteCurrentEdit() {
+  if(!editingId)return;
+  const e=entries.find(x=>x.id===editingId);
+  if(!e||!confirm('Delete "'+e.title+'"?'))return;
+  entries.splice(entries.findIndex(x=>x.id===editingId),1);
+  Object.keys(metaOrder).forEach(cat=>{metaOrder[cat]=metaOrder[cat].filter(x=>x!==editingId);});
+  save();renderAll();closeModal('addModal');
+}
+function openDetail(id) {
+  const e=entries.find(x=>x.id===id); if(!e)return;
+  detailId=id;
+  const cc=catClass(e.category);
+  document.getElementById('detailDot').className='d-dot cb-'+cc;
+  document.getElementById('detailCatText').textContent=e.category;
+  document.getElementById('detailCatText').className='cc-'+cc;
+  document.getElementById('detailTitle').textContent=e.title;
+  document.getElementById('detailFormula').textContent=e.formula;
+  document.getElementById('detailExplanation').textContent=e.explanation||'—';
+  document.getElementById('detailOverlay').classList.add('visible');
+}
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('visible'); detailId=null; }
+function editFromDetail() { const id=detailId; closeDetail(); openEditModal(id); }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.getElementById('detailOverlay').classList.contains('visible'))closeDetail();
+    else if(document.getElementById('addModal').classList.contains('visible'))closeModal('addModal');
+  }
+});
+load(); renderAll();
+</script>
+</body>
+</html>
