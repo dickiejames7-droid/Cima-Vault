@@ -118,6 +118,7 @@
     .meta-item { display: flex; align-items: center; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; overflow: hidden; }
     .meta-item:last-child { border-bottom: none; }
     .meta-item:hover { background: var(--blue-faint); }
+    .meta-item.drag-ready { background: var(--blue-faint); }
     .meta-stripe { width: 3px; align-self: stretch; flex-shrink: 0; }
     .meta-inner { flex: 1; display: flex; align-items: center; gap: 10px; padding: 11px 14px; min-width: 0; }
     .meta-ttl { font-size: 12px; font-weight: 500; color: var(--text); flex: 0 0 auto; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -292,32 +293,71 @@ let entries = [], metaOrder = {}, editingId = null, detailId = null, currentPage
 // ── TOUCH DRAG STATE ──────────────────────────────────
 let tDrag = null;
 
+// How far a finger must move (px) before we treat the gesture as a scroll/cancel
+const SCROLL_THRESHOLD = 8;
+// How long a finger must be held still before drag mode activates
+const LONG_PRESS_MS = 500;
+
 function initTouchDrag(item, entryId, cat, groupsRef) {
   let longPressTimer = null;
-  let didDrag = false;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let dragActivated = false;
+  let cancelled = false;
 
   item.addEventListener('touchstart', ev => {
-    didDrag = false;
+    dragActivated = false;
+    cancelled = false;
+    touchStartX = ev.touches[0].clientX;
+    touchStartY = ev.touches[0].clientY;
+
     longPressTimer = setTimeout(() => {
-      didDrag = true;
-      startTouchDrag(ev.touches[0], item, entryId, cat, groupsRef);
-    }, 380);
+      if (!cancelled) {
+        dragActivated = true;
+        item.classList.add('drag-ready');
+        startTouchDrag(ev.touches[0], item, entryId, cat, groupsRef);
+      }
+    }, LONG_PRESS_MS);
   }, { passive: true });
 
   item.addEventListener('touchmove', ev => {
-    if (!tDrag) { clearTimeout(longPressTimer); return; }
-    ev.preventDefault();
-    moveTouchDrag(ev.touches[0]);
+    const dx = ev.touches[0].clientX - touchStartX;
+    const dy = ev.touches[0].clientY - touchStartY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // If the finger has moved enough before drag activated, it's a scroll — cancel
+    if (!dragActivated && dist > SCROLL_THRESHOLD) {
+      cancelled = true;
+      clearTimeout(longPressTimer);
+      return; // let native scroll handle it
+    }
+
+    if (dragActivated && tDrag) {
+      ev.preventDefault();
+      moveTouchDrag(ev.touches[0]);
+    }
   }, { passive: false });
 
-  item.addEventListener('touchend', () => {
+  item.addEventListener('touchend', ev => {
     clearTimeout(longPressTimer);
-    if (tDrag) { endTouchDrag(); }
-    else if (!didDrag) { openDetail(entryId); }
+    item.classList.remove('drag-ready');
+
+    if (dragActivated && tDrag) {
+      endTouchDrag();
+    } else if (!cancelled && !dragActivated) {
+      // Clean tap — open the detail
+      openDetail(entryId);
+    }
+
+    dragActivated = false;
+    cancelled = false;
   });
 
   item.addEventListener('touchcancel', () => {
     clearTimeout(longPressTimer);
+    item.classList.remove('drag-ready');
+    cancelled = true;
+    dragActivated = false;
     if (tDrag) endTouchDrag(true);
   });
 }
@@ -434,7 +474,6 @@ function renderMeta() {
       item.className='meta-item'; item.dataset.id=e.id; item.dataset.cat=cat;
       item.innerHTML=`<div class="meta-stripe cb-${cc}"></div><div class="meta-inner"><span class="meta-ttl">${esc(e.title)}</span><span class="meta-sep">&middot;</span><span class="meta-fml">${esc(e.formula)}</span><span class="meta-arr">&#8250;</span></div>`;
       initTouchDrag(item, e.id, cat, groups);
-      item.addEventListener('click', () => { if (!tDrag) openDetail(e.id); });
       wrap.appendChild(item);
     });
     group.appendChild(wrap); el.appendChild(group);
